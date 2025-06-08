@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import './MessageBox.css'
 
 interface MessageContent {
@@ -52,6 +52,14 @@ export interface MessageBoxProps {
 
 function MessageBox({ messages, currentUserId, onImageClick, onVideoClick }: MessageBoxProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const [contextMenu, setContextMenu] = useState<{
+        visible: boolean
+        x: number
+        y: number
+        messageIndex: number
+        contentIndex: number
+        content: string
+    }>({ visible: false, x: 0, y: 0, messageIndex: -1, contentIndex: -1, content: '' })
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -61,10 +69,108 @@ function MessageBox({ messages, currentUserId, onImageClick, onVideoClick }: Mes
         scrollToBottom()
     }, [messages])
 
-    const renderMessageContent = (messageContent: MessageContent) => {
+    // 点击其他地方隐藏菜单
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            // 检查点击的目标是否在右键菜单内
+            const target = e.target as HTMLElement
+            const contextMenuElement = document.querySelector('.context-menu')
+            
+            if (contextMenuElement && contextMenuElement.contains(target)) {
+                return // 点击菜单内部，不隐藏
+            }
+            
+            hideContextMenu()
+        }
+        
+        if (contextMenu.visible) {
+            // 延迟添加事件监听器，避免立即触发
+            const timer = setTimeout(() => {
+                document.addEventListener('click', handleClick)
+            }, 50)
+            
+            return () => {
+                clearTimeout(timer)
+                document.removeEventListener('click', handleClick)
+            }
+        }
+    }, [contextMenu.visible])
+
+    // 处理右键菜单
+    const handleContextMenu = (e: React.MouseEvent, messageIndex: number, contentIndex: number, content: string) => {
+        e.preventDefault()
+        e.stopPropagation()
+        
+        console.log('右键菜单触发:', { 
+            messageIndex, 
+            contentIndex, 
+            content, 
+            x: e.clientX, 
+            y: e.clientY,
+            target: e.target,
+            currentTarget: e.currentTarget
+        })
+        
+        // 先隐藏之前的菜单
+        if (contextMenu.visible) {
+            hideContextMenu()
+        }
+        
+        // 计算菜单位置，确保不超出视窗
+        const menuWidth = 120
+        const menuHeight = 40
+        const x = e.clientX + menuWidth > window.innerWidth ? e.clientX - menuWidth : e.clientX
+        const y = e.clientY + menuHeight > window.innerHeight ? e.clientY - menuHeight : e.clientY
+        
+        // 延迟设置菜单状态，确保之前的菜单完全隐藏
+        setTimeout(() => {
+            setContextMenu({
+                visible: true,
+                x,
+                y,
+                messageIndex,
+                contentIndex,
+                content
+            })
+            console.log('右键菜单状态已设置:', { visible: true, x, y })
+        }, 10)
+    }
+
+    // 隐藏右键菜单
+    const hideContextMenu = () => {
+        setContextMenu(prev => ({ ...prev, visible: false }))
+    }
+
+    // 复制文本
+    const copyText = async () => {
+        try {
+            await navigator.clipboard.writeText(contextMenu.content)
+            console.log('文本已复制到剪贴板')
+        } catch (err) {
+            console.error('复制失败:', err)
+            // 降级方案
+            const textArea = document.createElement('textarea')
+            textArea.value = contextMenu.content
+            document.body.appendChild(textArea)
+            textArea.select()
+            document.execCommand('copy')
+            document.body.removeChild(textArea)
+        }
+        hideContextMenu()
+    }
+
+
+    const renderMessageContent = (messageContent: MessageContent, messageIndex: number, contentIndex: number) => {
         switch (messageContent.type) {
             case 'text':
-                return <span className="message-text">{messageContent.content}</span>
+                return (
+                    <span 
+                        className="message-text"
+                        onContextMenu={(e) => handleContextMenu(e, messageIndex, contentIndex, messageContent.content || '')}
+                    >
+                        {messageContent.content}
+                    </span>
+                )
             
             case 'image':
                 return (
@@ -112,6 +218,7 @@ function MessageBox({ messages, currentUserId, onImageClick, onVideoClick }: Mes
                             <div key={index} className="video-container">
                                 <video 
                                     controls 
+                                    playsInline
                                     className="message-video-player"
                                     onClick={() => onVideoClick?.(videoUrl)}
                                 >
@@ -173,7 +280,7 @@ function MessageBox({ messages, currentUserId, onImageClick, onVideoClick }: Mes
                                     <div className="message-contents">
                                         {message.message.map((messageContent, contentIndex) => (
                                             <div key={contentIndex} className={`content-item content-${messageContent.type}`}>
-                                                {renderMessageContent(messageContent)}
+                                                {renderMessageContent(messageContent, messageIndex, contentIndex)}
                                             </div>
                                         ))}
                                     </div>
@@ -192,6 +299,28 @@ function MessageBox({ messages, currentUserId, onImageClick, onVideoClick }: Mes
                 })}
                 <div ref={messagesEndRef} />
             </div>
+            
+            {/* 右键菜单 */}
+            {contextMenu.visible && (
+                <div 
+                    className="context-menu"
+                    style={{
+                        position: 'fixed',
+                        left: contextMenu.x,
+                        top: contextMenu.y,
+                        zIndex: 1000
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="context-menu-item" onClick={copyText}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                        复制
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import ChatBox from './component/chat_box/ChatBox'
-import ChatMessageList from './component/chat_message_list/ChatMessageList'
+import React, { useState, useEffect } from 'react'
+import ChatBox from './components/chat_box/ChatBox'
+import ChatMessageList from './components/chat_message_list/ChatMessageList'
 
 import './App.css'
 
@@ -39,6 +39,25 @@ function App() {
     birthday: '1990-01-01',
     gender: '保密'
   })
+
+  // 禁用全局右键菜单，但保留消息文本区域的自定义菜单
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      // 如果是消息文本区域，允许自定义右键菜单
+      if (target.classList.contains('message-text')) {
+        return
+      }
+      // 其他区域禁用右键菜单
+      e.preventDefault()
+    }
+
+    document.addEventListener('contextmenu', handleContextMenu)
+    
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu)
+    }
+  }, [])
 
   const handleUserProfileClick = () => {
     setPageType('profile')

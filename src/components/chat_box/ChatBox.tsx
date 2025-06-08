@@ -57,7 +57,7 @@ function ChatBox({ pageType = 'empty', selectedFriend, user, onPageChange, onUse
 
     return (
         <div className="chat-box">
-            <div className="window-controls">
+            <div className="window-controls" onContextMenu={(e) => e.preventDefault()}>
                     <button className="control-btn minimize-btn" onClick={handleMinimize} title="最小化">
                         <svg width="12" height="12" viewBox="0 0 12 12">
                             <rect x="2" y="5" width="8" height="2" fill="currentColor"/>
@@ -74,7 +74,7 @@ function ChatBox({ pageType = 'empty', selectedFriend, user, onPageChange, onUse
                         </svg>
                     </button>
             </div>
-            <div className="header-left">
+            <div className="header-left" onContextMenu={(e) => e.preventDefault()}>
                 {pageType === 'chat' && selectedFriend && (
                     <div className="chat-title">
                         <span className="chat-name">{selectedFriend.name}</span>

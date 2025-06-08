@@ -2,6 +2,8 @@ import { app, BrowserWindow, ipcMain, desktopCapturer, Tray, Menu } from "electr
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import fs from "node:fs";
+import os from "node:os";
 const require2 = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 process.env.APP_ROOT = path.join(__dirname, "..");
@@ -270,6 +272,367 @@ ipcMain.handle("capture-region-screenshot", async () => {
       reject(error);
     }
   });
+});
+ipcMain.handle("get-screen-sources", async () => {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ["screen", "window"],
+      thumbnailSize: { width: 300, height: 200 }
+    });
+    return sources.map((source) => ({
+      id: source.id,
+      name: source.name,
+      thumbnail: source.thumbnail.toDataURL()
+    }));
+  } catch (error) {
+    console.error("Failed to get screen sources:", error);
+    throw error;
+  }
+});
+ipcMain.handle("is-screen-recording-supported", async () => {
+  return true;
+});
+ipcMain.handle("setup-media-access", async () => {
+  try {
+    if (win && win.webContents) {
+      win.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+        if (["media", "camera", "microphone", "display-capture"].includes(permission)) {
+          callback(true);
+        } else {
+          callback(false);
+        }
+      });
+      win.webContents.session.setDisplayMediaRequestHandler((request, callback) => {
+        desktopCapturer.getSources({ types: ["screen", "window"] }).then((sources) => {
+          const availableSources = sources.filter((source) => {
+            return !source.name.includes("Electron") && !source.name.includes("DevTools") && source.id && source.id.length > 0;
+          });
+          if (availableSources.length > 0) {
+            const screenSource = availableSources.find(
+              (source) => source.id.startsWith("screen:") || source.name.toLowerCase().includes("screen") || source.name.toLowerCase().includes("屏幕")
+            ) || availableSources[0];
+            console.log("选择的录制源:", screenSource.name, screenSource.id);
+            callback({ video: screenSource, audio: "loopback" });
+          } else {
+            console.warn("没有找到可用的录制源");
+            callback({});
+          }
+        }).catch((error) => {
+          console.error("获取屏幕源失败:", error);
+          callback({});
+        });
+      });
+    }
+    return true;
+  } catch (error) {
+    console.error("Failed to setup media access:", error);
+    return false;
+  }
+});
+ipcMain.handle("get-config-path", async () => {
+  try {
+    const isPackaged = app.isPackaged;
+    let configPath;
+    if (isPackaged) {
+      const appPath = path.dirname(app.getPath("exe"));
+      configPath = path.join(appPath, "AppData", "config.json");
+    } else {
+      const userDataPath = app.getPath("userData");
+      configPath = path.join(userDataPath, "config.json");
+    }
+    return {
+      success: true,
+      configPath,
+      message: "获取配置文件路径成功"
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: "获取配置文件路径失败"
+    };
+  }
+});
+ipcMain.handle("read-config", async () => {
+  try {
+    const isPackaged = app.isPackaged;
+    let configPath;
+    if (isPackaged) {
+      const appPath = path.dirname(app.getPath("exe"));
+      configPath = path.join(appPath, "AppData", "config.json");
+    } else {
+      const userDataPath = app.getPath("userData");
+      configPath = path.join(userDataPath, "config.json");
+    }
+    if (!fs.existsSync(configPath)) {
+      return {
+        success: false,
+        error: "配置文件不存在",
+        message: "配置文件不存在"
+      };
+    }
+    const configData = fs.readFileSync(configPath, "utf-8");
+    const config = JSON.parse(configData);
+    return {
+      success: true,
+      config,
+      message: "读取配置文件成功"
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: "读取配置文件失败"
+    };
+  }
+});
+ipcMain.handle("save-config", async (event, config) => {
+  try {
+    const isPackaged = app.isPackaged;
+    let configPath;
+    if (isPackaged) {
+      const appPath = path.dirname(app.getPath("exe"));
+      configPath = path.join(appPath, "AppData", "config.json");
+    } else {
+      const userDataPath = app.getPath("userData");
+      configPath = path.join(userDataPath, "config.json");
+    }
+    const configDir = path.dirname(configPath);
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+    return {
+      success: true,
+      message: "保存配置文件成功"
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: "保存配置文件失败"
+    };
+  }
+});
+ipcMain.handle("get-app-data-path", async () => {
+  try {
+    const appPath = app.getAppPath();
+    const isInstalled = appPath.includes("Program Files") || appPath.includes("Program Files (x86)") || !appPath.includes("node_modules");
+    let basePath;
+    if (isInstalled) {
+      basePath = path.join(app.getPath("appData"), app.getName());
+    } else {
+      basePath = path.join(os.homedir(), "AppData", "HdSome");
+    }
+    const folders = ["messages", "audio", "images", "videos", "files"];
+    for (const folder of folders) {
+      const folderPath = path.join(basePath, folder);
+      if (!fs.existsSync(folderPath)) {
+        fs.mkdirSync(folderPath, { recursive: true });
+      }
+    }
+    return {
+      basePath,
+      folders: {
+        messages: path.join(basePath, "messages"),
+        audio: path.join(basePath, "audio"),
+        images: path.join(basePath, "images"),
+        videos: path.join(basePath, "videos"),
+        files: path.join(basePath, "files")
+      }
+    };
+  } catch (error) {
+    console.error("Failed to get app data path:", error);
+    throw error;
+  }
+});
+ipcMain.handle("save-file", async (event, { data, fileName, fileType, encoding = "utf8" }) => {
+  try {
+    const appPath = app.getAppPath();
+    const isInstalled = appPath.includes("Program Files") || appPath.includes("Program Files (x86)") || !appPath.includes("node_modules");
+    let basePath;
+    if (isInstalled) {
+      basePath = path.join(app.getPath("appData"), app.getName());
+    } else {
+      basePath = path.join(os.homedir(), "AppData", "HdSome");
+    }
+    const folders = {
+      messages: path.join(basePath, "messages"),
+      audio: path.join(basePath, "audio"),
+      images: path.join(basePath, "images"),
+      videos: path.join(basePath, "videos"),
+      files: path.join(basePath, "files")
+    };
+    let targetFolder;
+    switch (fileType) {
+      case "message":
+        targetFolder = folders.messages;
+        break;
+      case "audio":
+        targetFolder = folders.audio;
+        break;
+      case "image":
+        targetFolder = folders.images;
+        break;
+      case "video":
+        targetFolder = folders.videos;
+        break;
+      case "file":
+      default:
+        targetFolder = folders.files;
+        break;
+    }
+    const filePath = path.join(targetFolder, fileName);
+    if (!fs.existsSync(targetFolder)) {
+      fs.mkdirSync(targetFolder, { recursive: true });
+    }
+    if (typeof data === "string") {
+      fs.writeFileSync(filePath, data, encoding);
+    } else if (Buffer.isBuffer(data)) {
+      fs.writeFileSync(filePath, data);
+    } else if (data instanceof Uint8Array) {
+      fs.writeFileSync(filePath, Buffer.from(data));
+    } else {
+      fs.writeFileSync(filePath, JSON.stringify(data), encoding);
+    }
+    return {
+      success: true,
+      filePath,
+      message: `文件已保存到: ${filePath}`
+    };
+  } catch (error) {
+    console.error("Failed to save file:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: "文件保存失败"
+    };
+  }
+});
+ipcMain.handle("read-file", async (event, { fileName, fileType, encoding = "utf8" }) => {
+  try {
+    const appPath = app.getAppPath();
+    const isInstalled = appPath.includes("Program Files") || appPath.includes("Program Files (x86)") || !appPath.includes("node_modules");
+    let basePath;
+    if (isInstalled) {
+      basePath = path.join(app.getPath("appData"), app.getName());
+    } else {
+      basePath = path.join(os.homedir(), "AppData", "HdSome");
+    }
+    const folders = {
+      messages: path.join(basePath, "messages"),
+      audio: path.join(basePath, "audio"),
+      images: path.join(basePath, "images"),
+      videos: path.join(basePath, "videos"),
+      files: path.join(basePath, "files")
+    };
+    let targetFolder;
+    switch (fileType) {
+      case "message":
+        targetFolder = folders.messages;
+        break;
+      case "audio":
+        targetFolder = folders.audio;
+        break;
+      case "image":
+        targetFolder = folders.images;
+        break;
+      case "video":
+        targetFolder = folders.videos;
+        break;
+      case "file":
+      default:
+        targetFolder = folders.files;
+        break;
+    }
+    const filePath = path.join(targetFolder, fileName);
+    if (!fs.existsSync(filePath)) {
+      throw new Error("文件不存在");
+    }
+    const data = fs.readFileSync(filePath, encoding);
+    return {
+      success: true,
+      data,
+      filePath,
+      message: "文件读取成功"
+    };
+  } catch (error) {
+    console.error("Failed to read file:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: "文件读取失败"
+    };
+  }
+});
+ipcMain.handle("list-files", async (event, { fileType }) => {
+  try {
+    const appPath = app.getAppPath();
+    const isInstalled = appPath.includes("Program Files") || appPath.includes("Program Files (x86)") || !appPath.includes("node_modules");
+    let basePath;
+    if (isInstalled) {
+      basePath = path.join(app.getPath("appData"), app.getName());
+    } else {
+      basePath = path.join(os.homedir(), "AppData", "HdSome");
+    }
+    const folders = {
+      messages: path.join(basePath, "messages"),
+      audio: path.join(basePath, "audio"),
+      images: path.join(basePath, "images"),
+      videos: path.join(basePath, "videos"),
+      files: path.join(basePath, "files")
+    };
+    let targetFolder;
+    switch (fileType) {
+      case "message":
+        targetFolder = folders.messages;
+        break;
+      case "audio":
+        targetFolder = folders.audio;
+        break;
+      case "image":
+        targetFolder = folders.images;
+        break;
+      case "video":
+        targetFolder = folders.videos;
+        break;
+      case "file":
+      default:
+        targetFolder = folders.files;
+        break;
+    }
+    if (!fs.existsSync(targetFolder)) {
+      return {
+        success: true,
+        files: [],
+        message: "目录不存在，返回空列表"
+      };
+    }
+    const files = fs.readdirSync(targetFolder).map((fileName) => {
+      const filePath = path.join(targetFolder, fileName);
+      const stats = fs.statSync(filePath);
+      return {
+        name: fileName,
+        path: filePath,
+        size: stats.size,
+        created: stats.birthtime,
+        modified: stats.mtime,
+        isDirectory: stats.isDirectory()
+      };
+    });
+    return {
+      success: true,
+      files,
+      message: `找到 ${files.length} 个文件`
+    };
+  } catch (error) {
+    console.error("Failed to list files:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: "文件列表获取失败"
+    };
+  }
 });
 app.whenReady().then(() => {
   createWindow();

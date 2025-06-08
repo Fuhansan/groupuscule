@@ -193,7 +193,14 @@ function ChatWindow({ friend }: ChatWindowProps) {
                     if (mixedContent.voice) {
                         messageContents.push({
                             type: 'voice',
-                            content: JSON.stringify(mixedContent.voice)
+                            voices: [mixedContent.voice.url]
+                        })
+                    }
+                    
+                    if (mixedContent.video) {
+                        messageContents.push({
+                            type: 'video',
+                            videos: [mixedContent.video.url]
                         })
                     }
                 } catch (error) {

@@ -1,7 +1,9 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain, desktopCapturer } from 'electron'
+import { app, BrowserWindow, ipcMain, desktopCapturer, Tray, Menu, nativeImage, session } from 'electron'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import fs from 'node:fs'
+import os from 'node:os'
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -349,7 +351,477 @@ ipcMain.handle('capture-region-screenshot', async () => {
   })
 })
 
+// 屏幕录制相关的IPC处理程序
+ipcMain.handle('get-screen-sources', async () => {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['screen', 'window'],
+      thumbnailSize: { width: 300, height: 200 }
+    })
+    
+    return sources.map(source => ({
+      id: source.id,
+      name: source.name,
+      thumbnail: source.thumbnail.toDataURL()
+    }))
+  } catch (error) {
+    console.error('Failed to get screen sources:', error)
+    throw error
+  }
+})
+
+ipcMain.handle('is-screen-recording-supported', async () => {
+  // Electron环境下总是支持屏幕录制
+  return true
+})
+
+// 设置媒体访问权限
+ipcMain.handle('setup-media-access', async () => {
+  try {
+    // 为渲染进程设置媒体访问权限
+    if (win && win.webContents) {
+      // 允许访问媒体权限
+      win.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+        // 允许所有媒体相关权限请求
+        if (['media', 'camera', 'microphone', 'display-capture'].includes(permission)) {
+          callback(true)
+        } else {
+          callback(false)
+        }
+      })
+      
+      // 设置显示媒体处理器
+      win.webContents.session.setDisplayMediaRequestHandler((request, callback) => {
+        // 获取所有可用的屏幕源
+        desktopCapturer.getSources({ types: ['screen', 'window'] }).then((sources) => {
+          // 过滤出可用的源
+          const availableSources = sources.filter(source => {
+            // 排除一些已知不可用的源
+            return !source.name.includes('Electron') && 
+                   !source.name.includes('DevTools') &&
+                   source.id && source.id.length > 0
+          })
+          
+          if (availableSources.length > 0) {
+            // 优先选择屏幕源，如果没有则选择第一个窗口源
+            const screenSource = availableSources.find(source => 
+              source.id.startsWith('screen:') || 
+              source.name.toLowerCase().includes('screen') ||
+              source.name.toLowerCase().includes('屏幕')
+            ) || availableSources[0]
+            
+            console.log('选择的录制源:', screenSource.name, screenSource.id)
+            callback({ video: screenSource, audio: 'loopback' })
+          } else {
+            console.warn('没有找到可用的录制源')
+            callback({})
+          }
+        }).catch((error) => {
+          console.error('获取屏幕源失败:', error)
+          callback({})
+        })
+      })
+    }
+    return true
+  } catch (error) {
+    console.error('Failed to setup media access:', error)
+    return false
+  }
+})
+
+// 配置文件相关的 IPC 处理器
+// 获取配置文件路径
+ipcMain.handle('get-config-path', async () => {
+  try {
+    const isPackaged = app.isPackaged
+    let configPath: string
+    
+    if (isPackaged) {
+      // 已安装版本：使用安装目录下的 AppData
+      const appPath = path.dirname(app.getPath('exe'))
+      configPath = path.join(appPath, 'AppData', 'config.json')
+    } else {
+      // 开发版本：使用用户 AppData 目录
+      const userDataPath = app.getPath('userData')
+      configPath = path.join(userDataPath, 'config.json')
+    }
+    
+    return {
+      success: true,
+      configPath,
+      message: '获取配置文件路径成功'
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: '获取配置文件路径失败'
+    }
+  }
+})
+
+// 读取配置文件
+ipcMain.handle('read-config', async () => {
+  try {
+    // 直接计算配置文件路径
+    const isPackaged = app.isPackaged
+    let configPath: string
+    
+    if (isPackaged) {
+      // 已安装版本：使用安装目录下的 AppData
+      const appPath = path.dirname(app.getPath('exe'))
+      configPath = path.join(appPath, 'AppData', 'config.json')
+    } else {
+      // 开发版本：使用用户 AppData 目录
+      const userDataPath = app.getPath('userData')
+      configPath = path.join(userDataPath, 'config.json')
+    }
+    
+    if (!fs.existsSync(configPath)) {
+      return {
+        success: false,
+        error: '配置文件不存在',
+        message: '配置文件不存在'
+      }
+    }
+    
+    const configData = fs.readFileSync(configPath, 'utf-8')
+    const config = JSON.parse(configData)
+    
+    return {
+      success: true,
+      config,
+      message: '读取配置文件成功'
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: '读取配置文件失败'
+    }
+  }
+})
+
+// 保存配置文件
+ipcMain.handle('save-config', async (event, config) => {
+  try {
+    // 直接计算配置文件路径
+    const isPackaged = app.isPackaged
+    let configPath: string
+    
+    if (isPackaged) {
+      // 已安装版本：使用安装目录下的 AppData
+      const appPath = path.dirname(app.getPath('exe'))
+      configPath = path.join(appPath, 'AppData', 'config.json')
+    } else {
+      // 开发版本：使用用户 AppData 目录
+      const userDataPath = app.getPath('userData')
+      configPath = path.join(userDataPath, 'config.json')
+    }
+    
+    // 确保目录存在
+    const configDir = path.dirname(configPath)
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true })
+    }
+    
+    // 保存配置文件
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
+    
+    return {
+      success: true,
+      message: '保存配置文件成功'
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: '保存配置文件失败'
+    }
+  }
+})
+
+// 文件保存相关的IPC处理器
+
+// 获取应用数据保存路径
+ipcMain.handle('get-app-data-path', async () => {
+  try {
+    // 检查是否为安装版本（通过检查是否在Program Files等目录下）
+    const appPath = app.getAppPath()
+    const isInstalled = appPath.includes('Program Files') || 
+                       appPath.includes('Program Files (x86)') ||
+                       !appPath.includes('node_modules')
+    
+    let basePath: string
+    
+    if (isInstalled) {
+      // 安装版本：使用应用数据目录
+      basePath = path.join(app.getPath('appData'), app.getName())
+    } else {
+      // 开发版本：使用用户目录下的AppData/HdSome
+      basePath = path.join(os.homedir(), 'AppData', 'HdSome')
+    }
+    
+    // 创建必要的文件夹结构
+    const folders = ['messages', 'audio', 'images', 'videos', 'files']
+    for (const folder of folders) {
+      const folderPath = path.join(basePath, folder)
+      if (!fs.existsSync(folderPath)) {
+        fs.mkdirSync(folderPath, { recursive: true })
+      }
+    }
+    
+    return {
+      basePath,
+      folders: {
+        messages: path.join(basePath, 'messages'),
+        audio: path.join(basePath, 'audio'),
+        images: path.join(basePath, 'images'),
+        videos: path.join(basePath, 'videos'),
+        files: path.join(basePath, 'files')
+      }
+    }
+  } catch (error) {
+    console.error('Failed to get app data path:', error)
+    throw error
+  }
+})
+
+// 保存文件
+ipcMain.handle('save-file', async (event, { data, fileName, fileType, encoding = 'utf8' }) => {
+  try {
+    // 获取应用数据路径
+    const appPath = app.getAppPath()
+    const isInstalled = appPath.includes('Program Files') || 
+                       appPath.includes('Program Files (x86)') ||
+                       !appPath.includes('node_modules')
+    
+    let basePath: string
+    if (isInstalled) {
+      basePath = path.join(app.getPath('appData'), app.getName())
+    } else {
+      basePath = path.join(os.homedir(), 'AppData', 'HdSome')
+    }
+    
+    const folders = {
+      messages: path.join(basePath, 'messages'),
+      audio: path.join(basePath, 'audio'),
+      images: path.join(basePath, 'images'),
+      videos: path.join(basePath, 'videos'),
+      files: path.join(basePath, 'files')
+    }
+    
+    // 根据文件类型确定保存路径
+    let targetFolder: string
+    switch (fileType) {
+      case 'message':
+        targetFolder = folders.messages
+        break
+      case 'audio':
+        targetFolder = folders.audio
+        break
+      case 'image':
+        targetFolder = folders.images
+        break
+      case 'video':
+        targetFolder = folders.videos
+        break
+      case 'file':
+      default:
+        targetFolder = folders.files
+        break
+    }
+    
+    const filePath = path.join(targetFolder, fileName)
+    
+    // 确保目录存在
+    if (!fs.existsSync(targetFolder)) {
+      fs.mkdirSync(targetFolder, { recursive: true })
+    }
+    
+    // 根据数据类型保存文件
+    if (typeof data === 'string') {
+      // 文本数据
+      fs.writeFileSync(filePath, data, encoding)
+    } else if (Buffer.isBuffer(data)) {
+      // Buffer数据
+      fs.writeFileSync(filePath, data)
+    } else if (data instanceof Uint8Array) {
+      // Uint8Array数据
+      fs.writeFileSync(filePath, Buffer.from(data))
+    } else {
+      // 其他数据类型，尝试JSON序列化
+      fs.writeFileSync(filePath, JSON.stringify(data), encoding)
+    }
+    
+    return {
+      success: true,
+      filePath,
+      message: `文件已保存到: ${filePath}`
+    }
+  } catch (error) {
+    console.error('Failed to save file:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: '文件保存失败'
+    }
+  }
+})
+
+// 读取文件
+ipcMain.handle('read-file', async (event, { fileName, fileType, encoding = 'utf8' }) => {
+  try {
+    // 获取应用数据路径
+    const appPath = app.getAppPath()
+    const isInstalled = appPath.includes('Program Files') || 
+                       appPath.includes('Program Files (x86)') ||
+                       !appPath.includes('node_modules')
+    
+    let basePath: string
+    if (isInstalled) {
+      basePath = path.join(app.getPath('appData'), app.getName())
+    } else {
+      basePath = path.join(os.homedir(), 'AppData', 'HdSome')
+    }
+    
+    const folders = {
+      messages: path.join(basePath, 'messages'),
+      audio: path.join(basePath, 'audio'),
+      images: path.join(basePath, 'images'),
+      videos: path.join(basePath, 'videos'),
+      files: path.join(basePath, 'files')
+    }
+    
+    // 根据文件类型确定读取路径
+    let targetFolder: string
+    switch (fileType) {
+      case 'message':
+        targetFolder = folders.messages
+        break
+      case 'audio':
+        targetFolder = folders.audio
+        break
+      case 'image':
+        targetFolder = folders.images
+        break
+      case 'video':
+        targetFolder = folders.videos
+        break
+      case 'file':
+      default:
+        targetFolder = folders.files
+        break
+    }
+    
+    const filePath = path.join(targetFolder, fileName)
+    
+    if (!fs.existsSync(filePath)) {
+      throw new Error('文件不存在')
+    }
+    
+    const data = fs.readFileSync(filePath, encoding)
+    
+    return {
+      success: true,
+      data,
+      filePath,
+      message: '文件读取成功'
+    }
+  } catch (error) {
+    console.error('Failed to read file:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: '文件读取失败'
+    }
+  }
+})
+
+// 列出指定类型的所有文件
+ipcMain.handle('list-files', async (event, { fileType }) => {
+  try {
+    // 获取应用数据路径
+    const appPath = app.getAppPath()
+    const isInstalled = appPath.includes('Program Files') || 
+                       appPath.includes('Program Files (x86)') ||
+                       !appPath.includes('node_modules')
+    
+    let basePath: string
+    if (isInstalled) {
+      basePath = path.join(app.getPath('appData'), app.getName())
+    } else {
+      basePath = path.join(os.homedir(), 'AppData', 'HdSome')
+    }
+    
+    const folders = {
+      messages: path.join(basePath, 'messages'),
+      audio: path.join(basePath, 'audio'),
+      images: path.join(basePath, 'images'),
+      videos: path.join(basePath, 'videos'),
+      files: path.join(basePath, 'files')
+    }
+    
+    // 根据文件类型确定目录
+    let targetFolder: string
+    switch (fileType) {
+      case 'message':
+        targetFolder = folders.messages
+        break
+      case 'audio':
+        targetFolder = folders.audio
+        break
+      case 'image':
+        targetFolder = folders.images
+        break
+      case 'video':
+        targetFolder = folders.videos
+        break
+      case 'file':
+      default:
+        targetFolder = folders.files
+        break
+    }
+    
+    if (!fs.existsSync(targetFolder)) {
+      return {
+        success: true,
+        files: [],
+        message: '目录不存在，返回空列表'
+      }
+    }
+    
+    const files = fs.readdirSync(targetFolder).map(fileName => {
+      const filePath = path.join(targetFolder, fileName)
+      const stats = fs.statSync(filePath)
+      return {
+        name: fileName,
+        path: filePath,
+        size: stats.size,
+        created: stats.birthtime,
+        modified: stats.mtime,
+        isDirectory: stats.isDirectory()
+      }
+    })
+    
+    return {
+      success: true,
+      files,
+      message: `找到 ${files.length} 个文件`
+    }
+  } catch (error) {
+    console.error('Failed to list files:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: '文件列表获取失败'
+    }
+  }
+})
+
 app.whenReady().then(() => {
   createWindow()
   createTray()
+  
+  // 注意：媒体访问权限和显示媒体请求处理器已在setup-media-access中设置
 })

@@ -9,6 +9,12 @@ interface ElectronAPI {
   captureRegionScreenshot: () => Promise<string>
   sendRegionSelection: (region: { x: number, y: number, width: number, height: number }) => void
   cancelRegionSelection: () => void
+  // 屏幕录制相关API
+  getScreenSources: () => Promise<Array<{id: string, name: string, thumbnail: string}>>
+  startScreenRecording: (sourceId: string, options?: {audio?: boolean, video?: {width?: number, height?: number, frameRate?: number}}) => Promise<MediaStream>
+  stopScreenRecording: () => Promise<void>
+  isScreenRecordingSupported: () => Promise<boolean>
+  setupMediaAccess: () => Promise<void>
 }
 
 interface IpcRenderer {

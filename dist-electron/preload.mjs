@@ -26,6 +26,19 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   close: () => electron.ipcRenderer.invoke("window-close"),
   captureScreenshot: () => electron.ipcRenderer.invoke("capture-screenshot"),
   captureRegionScreenshot: () => electron.ipcRenderer.invoke("capture-region-screenshot"),
+  // 屏幕录制相关API
+  getScreenSources: () => electron.ipcRenderer.invoke("get-screen-sources"),
+  isScreenRecordingSupported: () => electron.ipcRenderer.invoke("is-screen-recording-supported"),
+  setupMediaAccess: () => electron.ipcRenderer.invoke("setup-media-access"),
   sendRegionSelection: (region) => electron.ipcRenderer.send("region-selected", region),
-  cancelRegionSelection: () => electron.ipcRenderer.send("region-selection-cancelled")
+  cancelRegionSelection: () => electron.ipcRenderer.send("region-selection-cancelled"),
+  // 配置文件功能
+  getConfigPath: () => electron.ipcRenderer.invoke("get-config-path"),
+  readConfig: () => electron.ipcRenderer.invoke("read-config"),
+  saveConfig: (config) => electron.ipcRenderer.invoke("save-config", config),
+  // 文件保存相关API
+  getAppDataPath: () => electron.ipcRenderer.invoke("get-app-data-path"),
+  saveFile: (options) => electron.ipcRenderer.invoke("save-file", options),
+  readFile: (options) => electron.ipcRenderer.invoke("read-file", options),
+  listFiles: (options) => electron.ipcRenderer.invoke("list-files", options)
 });
