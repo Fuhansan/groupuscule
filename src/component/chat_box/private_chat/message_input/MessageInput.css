@@ -1,0 +1,655 @@
+/* 消息输入组件容器 */
+.message-input-container {
+    border-top: 0.1px solid rgba(204, 202, 198, 0.13);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    z-index: 10;
+}
+
+/* 第一个区域：工具栏 */
+.toolbar-section {
+    display: flex;
+    gap: 8px;
+    margin-top: 5px;
+    padding: 0;
+    flex-wrap: wrap;
+}
+
+.toolbar-btn {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #666;
+    position: relative;
+    overflow: visible;
+    padding: 4px;
+}
+
+.toolbar-btn:hover:not(:disabled) {
+    background: rgba(25, 118, 210, 0.1);
+    color: #1976d2;
+    transform: scale(1.1);
+    border-radius: 6px;
+}
+
+u.toolbar-btn.recording {
+    background-color: #ff4444;
+    color: white;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 68, 68, 0);
+    }
+}
+
+.toolbar-btn:active:not(:disabled) {
+    transform: scale(0.95);
+    background: rgba(25, 118, 210, 0.2);
+    border-radius: 6px;
+}
+
+.toolbar-btn:disabled {
+    background: transparent;
+    color: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    opacity: 0.5;
+}
+
+.toolbar-btn svg {
+    width: 24px;
+    height: 24px;
+    pointer-events: none;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* 第二个区域：消息输入区域 */
+.message-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;    
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    min-height: 60px;
+    flex: 1;
+}
+
+.message-section:focus-within {
+    /* 移除聚焦时的边框和阴影效果 */
+}
+
+/* 图片预览区域 */
+.selected-images {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.image-preview {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f5f5f5;
+    border: 1px solid #e1e5e9;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-preview .remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1;
+    transition: all 0.15s ease;
+}
+
+.image-preview .remove-btn:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+}
+
+/* 文件列表区域 */
+.selected-files {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.file-name {
+    color: #333;
+    font-weight: 500;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-item .remove-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #dc3545;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 1;
+    transition: all 0.15s ease;
+    margin-left: 8px;
+}
+
+.file-item .remove-btn:hover {
+    background: #c82333;
+    transform: scale(1.1);
+}
+
+/* 录制状态指示器 */
+.recording-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: #ff4444;
+    color: white;
+    border-radius: 20px;
+    font-size: 14px;
+    margin-left: 8px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.recording-dot {
+    width: 8px;
+    height: 8px;
+    background-color: white;
+    border-radius: 50%;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50% {
+        opacity: 1;
+    }
+    51%, 100% {
+        opacity: 0.3;
+    }
+}
+
+.recording-time {
+    font-weight: 500;
+    min-width: 40px;
+}
+
+.cancel-recording {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.cancel-recording:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 语音消息预览 */
+.voice-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background-color: #f0f8ff;
+    border: 1px solid #e0e8f0;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.voice-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #666;
+    font-size: 14px;
+}
+
+.voice-info svg {
+    color: #007bff;
+}
+
+.voice-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.voice-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.voice-btn.send {
+    background-color: #007bff;
+    color: white;
+}
+
+.voice-btn.send:hover {
+    background-color: #0056b3;
+}
+
+.voice-btn.cancel {
+    background-color: #6c757d;
+    color: white;
+}
+
+.voice-btn.cancel:hover {
+    background-color: #545b62;
+}
+
+.voice-btn.play {
+    background-color: #28a745;
+    color: white;
+}
+
+.voice-btn.play:hover {
+    background-color: #218838;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 输入框包装器 */
+.input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: stretch;
+    color: white;
+    border-right: none;
+    transition: all 0.2s;
+    padding: 5px 5px;
+    position: relative;
+}
+
+.input-wrapper:focus-within {
+    /* 移除聚焦时的阴影效果 */
+}
+
+.input-wrapper:hover {
+    border-color: #bdbdbd;
+}
+
+/* 拖拽状态样式 */
+.input-wrapper.drag-over {
+  
+    background-color: rgba(25, 118, 210, 0.05);
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+.input-wrapper.drag-over::after {
+    content: '拖拽文件到此处';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.message-textarea {
+    width: 100%;
+    min-height: 24px;
+    border: none;
+    outline: none;
+    resize: none;
+    color: white;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: transparent;
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* 当没有图片和文件时，让文本区域占满更多空间 */
+.message-section:not(:has(.selected-images)):not(:has(.selected-files)) .message-textarea {
+    min-height: 80px;
+}
+
+/* 如果浏览器不支持:has选择器，使用备用方案 */
+@supports not selector(:has(*)) {
+    .message-section .input-wrapper {
+        min-height: 80px;
+    }
+    .message-section .message-textarea {
+        min-height: 80px;
+    }
+}
+
+.message-textarea::placeholder {
+    color: #999;
+}
+
+.message-textarea:disabled {
+    color: #999;
+    cursor: not-allowed;
+}
+
+/* 第三个区域：发送按钮区域 */
+.send-section {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.send-btn {
+    background: #2e89e4;
+    border: none;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    min-width: 60px;
+    justify-content: flex-end;
+    box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+}
+
+.send-btn:hover:not(:disabled) {
+    background: #1565c0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+}
+
+.send-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+}
+
+.send-btn:disabled {
+    background: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.send-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.send-btn span {
+    font-weight: 500;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .message-input-container {
+        padding: 12px 16px 16px;
+        gap: 10px;
+    }
+    
+    .toolbar-section {
+        gap: 6px;
+    }
+    
+    .toolbar-btn {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .toolbar-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .message-section {
+     
+    }
+    
+    .send-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+        height: 36px;
+        min-width: 70px;
+    }
+    
+    .image-preview {
+        width: 60px;
+        height: 60px;
+    }
+}
+
+/* 滚动条样式 */
+.message-textarea::-webkit-scrollbar {
+    width: 4px;
+}
+
+.message-textarea::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.message-textarea::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 2px;
+}
+
+.message-textarea::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* 表情选择器样式 */
+.emoji-picker {
+    position: absolute;
+    top: -320px;
+    left: 0;
+    width: 300px;
+    max-height: 300px;
+    background: white;
+    border: 1px solid #e1e5e9;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    overflow: hidden;
+    animation: fadeInUp 0.2s ease-out;
+}
+
+.emoji-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e1e5e9;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.emoji-picker-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #666;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.emoji-picker-close:hover {
+    background: #e9ecef;
+    color: #333;
+}
+
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 2px;
+    padding: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.emoji-item {
+    background: none;
+    border: none;
+    font-size: 18px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.emoji-item:hover {
+    background: #f0f0f0;
+    transform: scale(1.2);
+}
+
+.emoji-item:active {
+    transform: scale(1.1);
+    background: #e0e0e0;
+}
+
+/* 表情选择器滚动条 */
+.emoji-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.emoji-grid::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.emoji-grid::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.emoji-grid::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.selected-images,
+.selected-files {
+    animation: fadeIn 0.2s ease-out;
+}
+
+.image-preview,
+.file-item {
+    animation: fadeIn 0.2s ease-out;
+}

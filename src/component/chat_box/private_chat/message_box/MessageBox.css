@@ -1,0 +1,584 @@
+.messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    min-height: 0;
+    max-height: calc(100vh - 200px);
+    position: relative;
+}
+
+.messages-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 10px 0;
+}
+
+.messages-container::-webkit-scrollbar {
+    display: none;
+}
+
+.message-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: 75%;
+    margin-bottom: 12px;
+    animation: messageSlideIn 0.3s ease-out;
+}
+
+.message-self {
+    align-self: flex-end;
+}
+
+.message-other {
+    align-self: flex-start;
+}
+
+.message-avatar {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    margin-top: 4px;
+    position: relative;
+}
+
+.message-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.message-avatar img:hover {
+    transform: scale(1.05);
+}
+
+.message-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    background: linear-gradient(135deg, #257cd346 0%, #e9ecef0a 100%);
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+/* 消息气泡 */
+.message-bubble {
+    background: #ffffff;
+    border: none;
+    border-radius: 18px;
+    padding: 12px 16px;
+    max-width: 320px;
+    word-wrap: break-word;
+    position: relative;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
+}
+
+
+
+.message-self .message-bubble {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.3);
+}
+
+.message-self .message-bubble:hover {
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+}
+
+.message-other .message-bubble {
+    background: #ffffff;
+    color: #2c3e50;
+    border: 1px solid #f0f2f5;
+}
+
+/* 图片消息气泡 */
+.image-bubble,
+.media-bubble {
+    padding: 6px !important;
+    background: transparent !important;
+    border-radius: 20px !important;
+}
+
+.image-bubble {
+    max-width: 280px;
+    border: none;
+    overflow: hidden;
+}
+
+.message-self .image-bubble {
+    background: transparent;
+}
+
+/* 消息内容容器 */
+.message-contents {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* 内容项样式 */
+.content-item {
+    display: block;
+    position: relative;
+}
+
+/* 文本内容样式 */
+.content-item.content-text {
+    margin-bottom: 0;
+    order: 1;
+}
+
+/* 媒体内容样式 */
+.content-item.content-image {
+    margin: 0;
+    order: 2;
+}
+
+.content-item.content-video {
+    margin: 0;
+    order: 3;
+}
+
+.content-item.content-voice {
+    margin: 0;
+    order: 4;
+}
+
+.content-item.content-file {
+    margin: 0;
+    order: 5;
+}
+
+/* 混合消息的特殊布局 */
+.message-contents:has(.content-text):has(.content-image),
+.message-contents:has(.content-text):has(.content-video),
+.message-contents:has(.content-text):has(.content-voice),
+.message-contents:has(.content-text):has(.content-file) {
+    gap: 8px;
+}
+
+/* 当有文本和媒体内容时，文本在上方 */
+.message-contents .content-text + .content-image,
+.message-contents .content-text + .content-video,
+.message-contents .content-text + .content-voice,
+.message-contents .content-text + .content-file {
+    margin-top: 4px;
+}
+
+/* 当消息包含媒体内容时的特殊样式 */
+.media-bubble {
+    padding: 4px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.media-bubble .message-contents {
+    gap: 6px;
+    background: transparent;
+}
+
+/* 媒体消息中的文本样式 - 类似微信的设计 */
+.media-bubble .content-item.content-text {
+    padding: 10px 14px;
+    background: #ffffff;
+    border-radius: 16px;
+    margin-bottom: 6px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f0f2f5;
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.message-self .media-bubble .content-item.content-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 1px 6px rgba(102, 126, 234, 0.25);
+}
+
+/* 媒体内容的圆角调整 */
+.media-bubble .message-image-container {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.media-bubble .video-container {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.media-bubble .voice-player {
+    border-radius: 16px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.message-self .media-bubble .voice-player {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.media-bubble .message-file {
+    border-radius: 12px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.message-self .media-bubble .message-file {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 图片消息样式 */
+.message-images {
+    display: grid;
+    gap: 4px;
+    max-width: 280px;
+}
+
+/* 单张图片 */
+.message-images:has(.message-image-container:only-child) {
+    grid-template-columns: 1fr;
+}
+
+/* 两张图片 */
+.message-images:has(.message-image-container:nth-child(2):last-child) {
+    grid-template-columns: 1fr 1fr;
+}
+
+/* 三张图片 */
+.message-images:has(.message-image-container:nth-child(3):last-child) {
+    grid-template-columns: 1fr 1fr;
+}
+
+.message-images:has(.message-image-container:nth-child(3):last-child) .message-image-container:first-child {
+    grid-column: 1 / -1;
+}
+
+/* 四张及以上图片 */
+.message-images:has(.message-image-container:nth-child(4)) {
+    grid-template-columns: 1fr 1fr;
+}
+
+/* 九宫格布局（超过4张图片时） */
+.message-images:has(.message-image-container:nth-child(5)) {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 240px;
+}
+
+.message-image-container {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+/* 单张图片时保持原始比例 */
+.message-images:has(.message-image-container:only-child) .message-image-container {
+    aspect-ratio: auto;
+    max-width: 240px;
+    max-height: 300px;
+}
+
+/* 两张图片时的特殊处理 */
+.message-images:has(.message-image-container:nth-child(2):last-child) .message-image-container {
+    aspect-ratio: 4/3;
+}
+
+.message-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* 单张图片时保持原始比例 */
+.message-images:has(.message-image-container:only-child) .message-image {
+    height: auto;
+    object-fit: contain;
+}
+
+.message-image:hover {
+    transform: scale(1.05);
+}
+
+.message-image-container:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+/* 语音消息样式 */
+.message-voice {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.voice-player {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #ffffff;
+    border-radius: 18px;
+    min-width: 200px;
+    max-width: 280px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f0f2f5;
+    transition: all 0.2s ease;
+}
+
+.voice-player:hover {
+    background: #f8f9fa;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+}
+
+.voice-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    color: white;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(102, 126, 234, 0.3);
+    transition: all 0.2s ease;
+}
+
+.voice-icon:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+}
+
+.voice-audio {
+    flex: 1;
+    height: 32px;
+}
+
+.voice-audio::-webkit-media-controls-panel {
+    background-color: transparent;
+}
+
+/* 视频消息样式 */
+.message-video {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.video-container {
+    max-width: 320px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.video-container:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+}
+
+.message-video-player {
+    width: 100%;
+    height: auto;
+    display: block;
+    cursor: pointer;
+}
+
+.message-video-player:focus {
+    outline: none;
+}
+
+/* 文件消息样式 */
+.message-files {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* 文件消息样式更新 */
+.message-file {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #ffffff;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid #f0f2f5;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+    max-width: 280px;
+}
+
+.message-file:hover {
+    background: #f8f9fa;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.file-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(102, 126, 234, 0.3);
+    transition: all 0.2s ease;
+}
+
+.file-icon:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.message-self .file-icon {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    box-shadow: 0 1px 4px rgba(255, 255, 255, 0.3);
+}
+
+.file-name {
+    font-size: 14px;
+    color: #4facfe;
+    word-break: break-all;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-weight: 600;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-name:hover {
+    color: #0077ff;
+    text-decoration: none;
+}
+
+.message-text {
+    display: block;
+    line-height: 1.5;
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+}
+
+.message-time {
+    font-size: 12px;
+    color: #8e9aaf;
+    margin-top: 6px;
+    font-weight: 500;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.message-item:hover .message-time {
+    opacity: 1;
+}
+
+.message-self .message-time {
+    text-align: right;
+    color: #b8c5d6;
+}
+
+.message-other .message-time {
+    text-align: left;
+    color: #8e9aaf;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+/* 滚动条美化 */
+.messages-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+/* 添加一些微妙的动画效果 */
+.content-item {
+    transition: all 0.2s ease;
+}
+
+/* 移除内容项的悬停位移效果，避免与其他悬停效果冲突 */
+.content-item:hover {
+    /* transform: translateX(2px); */
+}
+
+.message-self .content-item:hover {
+    /* transform: translateX(-2px); */
+}
+
+/* 为混合消息添加统一的间距 */
+.message-contents > .content-item:not(:last-child) {
+    margin-bottom: 6px;
+}
+
+/* 优化混合消息的视觉层次 */
+.media-bubble .content-item {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* 确保文本内容在混合消息中的可读性 */
+.media-bubble .content-text .message-text {
+    margin: 0;
+    padding: 0;
+}

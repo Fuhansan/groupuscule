@@ -1,0 +1,11 @@
+/* 聊天窗口基本布局 */
+.chat-window {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+    max-height: 100vh;
+}

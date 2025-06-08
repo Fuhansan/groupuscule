@@ -20,3 +20,12 @@ electron.contextBridge.exposeInMainWorld("ipcRenderer", {
   // You can expose other APTs you need here.
   // ...
 });
+electron.contextBridge.exposeInMainWorld("electronAPI", {
+  minimize: () => electron.ipcRenderer.invoke("window-minimize"),
+  maximize: () => electron.ipcRenderer.invoke("window-maximize"),
+  close: () => electron.ipcRenderer.invoke("window-close"),
+  captureScreenshot: () => electron.ipcRenderer.invoke("capture-screenshot"),
+  captureRegionScreenshot: () => electron.ipcRenderer.invoke("capture-region-screenshot"),
+  sendRegionSelection: (region) => electron.ipcRenderer.send("region-selected", region),
+  cancelRegionSelection: () => electron.ipcRenderer.send("region-selection-cancelled")
+});

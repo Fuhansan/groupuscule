@@ -22,3 +22,14 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   // You can expose other APTs you need here.
   // ...
 })
+
+// --------- Expose electronAPI for window controls ---------
+contextBridge.exposeInMainWorld('electronAPI', {
+  minimize: () => ipcRenderer.invoke('window-minimize'),
+  maximize: () => ipcRenderer.invoke('window-maximize'),
+  close: () => ipcRenderer.invoke('window-close'),
+  captureScreenshot: () => ipcRenderer.invoke('capture-screenshot'),
+  captureRegionScreenshot: () => ipcRenderer.invoke('capture-region-screenshot'),
+  sendRegionSelection: (region: any) => ipcRenderer.send('region-selected', region),
+  cancelRegionSelection: () => ipcRenderer.send('region-selection-cancelled'),
+})

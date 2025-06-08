@@ -6,6 +6,8 @@
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
     background: rgba(63, 61, 61, 0.61);
+    display: flex;
+    flex-direction: column;
 
     /* 模糊 */
     filter: blur(0px);
@@ -13,11 +15,225 @@
     transition: all 0.5s;
 }
 
-
-.chat-box-header {
+.header-left {
     width: 100%;
-    height: 12vh;
+    height: 40px;
+    min-height: 40px;
     /* 设置鼠标放上去可以拖动*/
     -webkit-app-region: drag;
     border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0 20px;
+}
+
+.chat-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #f1f5f9;
+}
+
+.chat-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #f1f5f9;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.online-status {
+    font-size: 12px;
+    color: #10b981;
+    font-weight: 500;
+}
+
+.page-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #f1f5f9;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.chat-box-container {
+    flex: 1;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.window-controls {
+    display: flex;
+    height: 40px;
+    width: 100%;
+    gap: 8px;
+    justify-content: flex-end;
+    align-items: center;
+   
+    margin-right: 100px;
+    flex-shrink: 0;
+    /* 按钮区域不可拖动 */
+    -webkit-app-region: drag;
+}
+
+.window-controls .control-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #ccc;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0;
+    outline: none;
+    transition: background-color 0.2s ease;
+    /* 按钮区域可点击 */
+    -webkit-app-region: no-drag;
+}
+
+.window-controls .control-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.window-controls .control-btn:focus {
+    outline: none;
+}
+
+.window-controls .control-btn svg {
+    pointer-events: none;
+}
+
+/* 确保关闭按钮可见且背景透明 */
+.chat-box .window-controls .close-btn {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: none !important;
+    color: #ccc !important;
+    cursor: pointer !important;
+}
+
+.chat-box .window-controls .close-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* 空白状态样式 */
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0.95) 0%, 
+        rgba(30, 41, 59, 0.9) 50%, 
+        rgba(51, 65, 85, 0.85) 100%);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.empty-state::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, 
+        transparent 30%, 
+        rgba(59, 130, 246, 0.1) 50%, 
+        transparent 70%);
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+.empty-content {
+    text-align: center;
+    color: #f1f5f9;
+    z-index: 1;
+    position: relative;
+    padding: 40px;
+    background: linear-gradient(135deg, 
+        rgba(51, 65, 85, 0.3) 0%, 
+        rgba(71, 85, 105, 0.2) 100%);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    max-width: 400px;
+    animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.empty-icon {
+    color: #60a5fa;
+    margin-bottom: 24px;
+    opacity: 0.8;
+    filter: drop-shadow(0 4px 8px rgba(96, 165, 250, 0.3));
+    animation: float 3s ease-in-out infinite;
+}
+
+.empty-content h3 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.empty-content p {
+    font-size: 16px;
+    color: #94a3b8;
+    margin: 0;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
 }
